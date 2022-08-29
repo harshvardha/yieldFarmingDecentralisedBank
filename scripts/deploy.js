@@ -3,9 +3,9 @@ const fs = require("fs")
 
 async function main() {
   const [owner] = await ethers.getSigners()
+  const totalSupply = ethers.utils.parseEther("1000000")
 
   // deploying contracts
-
   // Sikka contract deployment
   const SikkaContract = await ethers.getContractFactory("Sikka")
   const sikkaContract = await SikkaContract.deploy()
@@ -17,6 +17,9 @@ async function main() {
   // DecentralBank contract deployment
   const DecentralBankContract = await ethers.getContractFactory("DecentralBank")
   const decentralBankContract = await DecentralBankContract.deploy(sikkaContract.address, rewardTokenContract.address)
+
+  // transferring all the reward tokens in bank's address
+  rewardTokenContract.transfer(decentralBankContract.address, totalSupply)
 
   // saving the contract artifacts in src folder
   // for eact contract pass the deployed contract and its name to this function
