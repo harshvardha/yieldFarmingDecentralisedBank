@@ -23,9 +23,9 @@ const createContracts = () => {
     return { sikkaContract, rewardTokenContract, decentralBankContract }
 }
 
-const getOwnerAddressAsSigner = (address) => {
+const getOwnerAddressAsSigner = () => {
     const jsonRpcProvider = new ethers.providers.JsonRpcProvider()
-    const jsonRpcSigner = jsonRpcProvider.getSigner(address)
+    const jsonRpcSigner = jsonRpcProvider.getSigner(ownerAddress)
     return jsonRpcSigner
 }
 
@@ -54,7 +54,6 @@ const YieldFarmingProvider = ({ children }) => {
             setUserAddress(accounts[0])
             setIsWalletConnected(true)
             const balance = await sikkaContract.balanceOf(accounts[0])
-            console.log(+fromWei(balance))
             if (+fromWei(balance) === 0)
                 await sikkaContract.connect(owner).transfer(accounts[0], toWei(100))
             const depositBalance = await decentralBankContract.depositorBalance(accounts[0])
@@ -71,20 +70,7 @@ const YieldFarmingProvider = ({ children }) => {
             const depositAmount = toWei(amount)
             await sikkaContract.approve(decentralBankContractAddress, depositAmount)
             await decentralBankContract.depositTokens(depositAmount)
-            setDepositedBalance(amount)
-            setAccountBalance(prevBalance => prevBalance - amount)
             setIsTimeRunning(true)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    const issueRewardTokens = async () => {
-        try {
-            const owner = getOwnerAddressAsSigner()
-            await decentralBankContract.connect(owner).issueRewardTokens(userAddress)
-            const rewardTokensBalance = await rewardTokenContract.balanceOf(userAddress)
-            setRewardTokenBalance(+fromWei(rewardTokensBalance))
         } catch (error) {
             console.log(error)
         }
@@ -92,20 +78,23 @@ const YieldFarmingProvider = ({ children }) => {
 
     const withdrawTokens = async () => {
         try {
-            const depositBalance = await decentralBankContract.depositorBalance(userAddress)
             await rewardTokenContract.approve(decentralBankContractAddress, toWei(rewardTokenBalance))
-            const balance = await rewardTokenContract.approvedToSpend(userAddress, decentralBankContractAddress)
-            console.log(+fromWei(balance))
             await decentralBankContract.withdrawTokens()
-            setAccountBalance(prevBalance => prevBalance + +fromWei(depositBalance))
-            setDepositedBalance(0)
-            setRewardTokenBalance(0)
         } catch (error) {
             console.log(error)
         }
     }
 
     useEffect(() => {
+        const issueRewardTokens = async () => {
+            try {
+                const owner = getOwnerAddressAsSigner()
+                await decentralBankContract.connect(owner).issueRewardTokens(userAddress)
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
         if (timeRemaining > 0 && isTimeRunning) {
             setTimeout(() => {
                 setTimeRemaining(prevTime => prevTime - 1)
