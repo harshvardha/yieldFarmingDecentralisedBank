@@ -30,6 +30,12 @@ async function main() {
   saveContractsData(decentralBankContract, "DecentralBank")
 }
 
+
+// This function is used to store the contract ABI and its address in a json file.
+// This function also stores owner's address in the json file.
+// contract ABI is stored in file with name format "contractName.json"
+// contract address and owner address is stored in file with name format "contractName/owner-address.json"
+// all the json files get stored in a contractsData folder in src folder
 function saveContractsData(contract, name) {
   const contractDir = "E:/Ethereum projects/projects/yield-farming-decentralized-bank/src/contractsData"
   if (!fs.existsSync(contractDir)) {

@@ -1,8 +1,11 @@
 import { YieldFarmingContext } from "../context/YieldFarmingContext"
 import { useContext, useState } from "react"
 
+// This component is used to deposit and withdraw SIKKA tokens and also to run the airdrop timer
 const Depositor = () => {
+    // This state is used to track the input in the input element
     const [depositedAmount, setDepositedAmount] = useState("")
+    // importing the required states and methods from YieldFarmingContext
     const {
         depositedBalance,
         rewardTokenBalance,
