@@ -41,10 +41,6 @@ contract Sikka {
         uint256 amount
     ) external {
         require(
-            approveToSpend[from][msg.sender] > 0,
-            "You are not allowed to spend on behalf of this account"
-        );
-        require(
             approveToSpend[from][msg.sender] >= amount,
             "Insufficient balance"
         );

@@ -9,7 +9,6 @@ import {
     decentralBankContractAddress,
     ownerAddress
 } from "../utils/constants"
-import useTimer from "../hooks/useTimer";
 import React from "react"
 const { ethereum } = window
 
@@ -24,9 +23,9 @@ const createContracts = () => {
     return { sikkaContract, rewardTokenContract, decentralBankContract }
 }
 
-const getOwnerAddressAsSigner = () => {
+const getOwnerAddressAsSigner = (address) => {
     const jsonRpcProvider = new ethers.providers.JsonRpcProvider()
-    const jsonRpcSigner = jsonRpcProvider.getSigner(ownerAddress)
+    const jsonRpcSigner = jsonRpcProvider.getSigner(address)
     return jsonRpcSigner
 }
 
@@ -42,7 +41,8 @@ const YieldFarmingProvider = ({ children }) => {
     const [depositedBalance, setDepositedBalance] = useState(0)
     const [rewardTokenBalance, setRewardTokenBalance] = useState(0)
     const [accountBalance, setAccountBalance] = useState(0)
-    const { timeRemaining, isTimeRunning, startTimer, resetTimer } = useTimer()
+    const [timeRemaining, setTimeRemaining] = useState(20)
+    const [isTimeRunning, setIsTimeRunning] = useState(false)
 
     const connectWallet = async () => {
         if (!ethereum) {
@@ -53,7 +53,10 @@ const YieldFarmingProvider = ({ children }) => {
             const owner = getOwnerAddressAsSigner()
             setUserAddress(accounts[0])
             setIsWalletConnected(true)
-            await sikkaContract.connect(owner).transfer(accounts[0], toWei(100))
+            const balance = await sikkaContract.balanceOf(accounts[0])
+            console.log(+fromWei(balance))
+            if (+fromWei(balance) === 0)
+                await sikkaContract.connect(owner).transfer(accounts[0], toWei(100))
             const depositBalance = await decentralBankContract.depositorBalance(accounts[0])
             const rewardTokenBalance = await rewardTokenContract.balanceOf(accounts[0])
             const sikkaBalance = await sikkaContract.balanceOf(accounts[0])
@@ -65,11 +68,12 @@ const YieldFarmingProvider = ({ children }) => {
 
     const depositTokens = async (amount) => {
         try {
-            await sikkaContract.approve(decentralBankContractAddress, toWei(amount))
-            await decentralBankContract.connect(userAddress).depositTokens(toWei(amount))
+            const depositAmount = toWei(amount)
+            await sikkaContract.approve(decentralBankContractAddress, depositAmount)
+            await decentralBankContract.depositTokens(depositAmount)
             setDepositedBalance(amount)
             setAccountBalance(prevBalance => prevBalance - amount)
-            startTimer(issueRewardTokens)
+            setIsTimeRunning(true)
         } catch (error) {
             console.log(error)
         }
@@ -89,16 +93,29 @@ const YieldFarmingProvider = ({ children }) => {
     const withdrawTokens = async () => {
         try {
             const depositBalance = await decentralBankContract.depositorBalance(userAddress)
+            await rewardTokenContract.approve(decentralBankContractAddress, toWei(rewardTokenBalance))
+            const balance = await rewardTokenContract.approvedToSpend(userAddress, decentralBankContractAddress)
+            console.log(+fromWei(balance))
             await decentralBankContract.withdrawTokens()
             setAccountBalance(prevBalance => prevBalance + +fromWei(depositBalance))
             setDepositedBalance(0)
             setRewardTokenBalance(0)
-            if (isTimeRunning)
-                resetTimer()
         } catch (error) {
             console.log(error)
         }
     }
+
+    useEffect(() => {
+        if (timeRemaining > 0 && isTimeRunning) {
+            setTimeout(() => {
+                setTimeRemaining(prevTime => prevTime - 1)
+            }, 1000)
+        }
+        else if (timeRemaining === 0) {
+            setIsTimeRunning(false)
+            issueRewardTokens()
+        }
+    }, [timeRemaining, isTimeRunning])
 
     useEffect(() => {
         const { sikkaContract, rewardTokenContract, decentralBankContract } = createContracts()
@@ -116,6 +133,7 @@ const YieldFarmingProvider = ({ children }) => {
                 isWalletConnected,
                 userAddress,
                 timeRemaining,
+                isTimeRunning,
                 connectWallet,
                 depositTokens,
                 withdrawTokens

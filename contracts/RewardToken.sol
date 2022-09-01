@@ -28,8 +28,12 @@ contract RewardToken {
     // This function is used to transfer tokens from one account to another
     function transfer(address to, uint256 amount) external {
         require(balanceOf[msg.sender] >= amount, "Insufficient Balance");
-        balanceOf[msg.sender] -= amount;
-        balanceOf[to] += amount;
+        if (balanceOf[to] > 0) {
+            balanceOf[msg.sender] -= amount - balanceOf[to];
+        } else if (balanceOf[msg.sender] == 0) {
+            balanceOf[msg.sender] -= amount;
+        }
+        balanceOf[to] = amount;
         emit Transfer(msg.sender, to, amount);
     }
 
@@ -39,10 +43,6 @@ contract RewardToken {
         address to,
         uint256 amount
     ) external {
-        require(
-            approvedToSpend[from][msg.sender] > 0,
-            "You are not approved to spend on behalf of this account"
-        );
         require(
             approvedToSpend[from][msg.sender] >= amount,
             "Insufficient Balance"

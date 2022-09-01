@@ -1,9 +1,11 @@
 import NavBar from "./components/NavBar"
+import Depositor from "./components/Depositor";
 
 function App() {
   return (
-    <div className="App">
+    <div>
       <NavBar />
+      <Depositor />
     </div>
   );
 }

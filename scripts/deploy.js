@@ -16,7 +16,7 @@ async function main() {
 
   // DecentralBank contract deployment
   const DecentralBankContract = await ethers.getContractFactory("DecentralBank")
-  const decentralBankContract = await DecentralBankContract.deploy(sikkaContract.address, rewardTokenContract.address)
+  const decentralBankContract = await DecentralBankContract.deploy(rewardTokenContract.address, sikkaContract.address)
 
   // transferring all the reward tokens in bank's address
   rewardTokenContract.transfer(decentralBankContract.address, totalSupply)
